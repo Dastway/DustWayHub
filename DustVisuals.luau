@@ -1483,3 +1483,185 @@ local RightVisual = Tabs.Visual:AddRightGroupbox('Trail')
 local LeftWorld = Tabs.World:AddLeftGroupbox('Skybox')
 local RightWorld = Tabs.World:AddRightGroupbox('Atmosphere')
 local LeftSettings = Tabs.Settings:AddLeftGroupbox('Menu Settings')
+
+-- Продолжение скрипта (элементы управления UI)
+
+-- [China Hat Groupbox]
+LeftVisual:AddToggle('HatEnabled', {
+    Text = 'Enabled',
+    Default = false,
+    Callback = Hat_ToggleEnabled,
+})
+
+LeftVisual:AddDropdown('HatStyle', {
+    Values = {'Classic', 'Drawing'},
+    Default = 1,
+    Text = 'Style',
+    Callback = Hat_ChangeStyle,
+})
+
+LeftVisual:AddSlider('HatRadius', {
+    Text = 'Radius',
+    Default = 2.4,
+    Min = 0.5,
+    Max = 10,
+    Rounding = 1,
+    Callback = function(v) HatVariables.radius = v end,
+})
+
+LeftVisual:AddSlider('HatHeight', {
+    Text = 'Height',
+    Default = 1.6,
+    Min = 0.5,
+    Max = 5,
+    Rounding = 1,
+    Callback = function(v) HatVariables.height = v end,
+})
+
+LeftVisual:AddSlider('HatTransparency', {
+    Text = 'Transparency',
+    Default = 0.3,
+    Min = 0,
+    Max = 1,
+    Rounding = 2,
+    Callback = function(v) HatVariables.transparency = v end,
+})
+
+LeftVisual:AddToggle('HatRainbow', {
+    Text = 'Rainbow',
+    Default = false,
+    Callback = function(v) HatVariables.rainbow = v end,
+})
+
+LeftVisual:AddColorPicker('HatColor', {
+    Text = 'Color',
+    Default = HatVariables.color,
+    Callback = function(v) HatVariables.color = v end,
+})
+
+-- [Trail Groupbox]
+RightVisual:AddToggle('TrailEnabled', {
+    Text = 'Enabled',
+    Default = false,
+    Callback = Trail_ToggleEnabled,
+})
+
+RightVisual:AddToggle('TrailGradient', {
+    Text = 'Gradient',
+    Default = false,
+    Callback = function(v) TrailVariables.isGradient = v end,
+})
+
+RightVisual:AddSlider('TrailLifetime', {
+    Text = 'Lifetime',
+    Default = 0.5,
+    Min = 0.1,
+    Max = 5,
+    Rounding = 1,
+    Callback = function(v) TrailVariables.lifetime = v end,
+})
+
+RightVisual:AddColorPicker('TrailStaticColor', {
+    Text = 'Color',
+    Default = TrailVariables.colorStatic,
+    Callback = function(v) TrailVariables.colorStatic = v end,
+})
+
+-- [Aura Groupbox (Visual Tab Extra)]
+local ExtraVisual = Tabs.Visual:AddLeftGroupbox('Auras')
+ExtraVisual:AddToggle('ClassicAuraEnabled', {
+    Text = 'Classic Aura',
+    Default = false,
+    Callback = ClassicAura_RefreshAll,
+})
+
+ExtraVisual:AddDropdown('ClassicAuraDropdown', {
+    Values = AuraModels,
+    Default = 1,
+    Multi = true,
+    Text = 'Classic Select',
+    Callback = ClassicAura_RefreshAll,
+})
+
+ExtraVisual:AddToggle('ParticleAuraEnabled', {
+    Text = 'Particle Aura',
+    Default = false,
+    Callback = ParticleAura_RefreshAll,
+})
+
+local particleNames = {}
+for _, item in ipairs(PARTICLE_AURA_NAMES) do
+    table.insert(particleNames, item)
+end
+ExtraVisual:AddDropdown('ParticleAuraDropdown', {
+    Values = particleNames,
+    Default = 1,
+    Multi = true,
+    Text = 'Particle Select',
+    Callback = ParticleAura_RefreshAll,
+})
+
+-- [Skybox Groupbox]
+local skyboxNames = {}
+for name, _ in pairs(SkyboxAssets) do
+    table.insert(skyboxNames, name)
+end
+LeftWorld:AddDropdown('SkyboxSelect', {
+    Values = skyboxNames,
+    Default = 'HD',
+    Text = 'Skybox',
+    Callback = Skybox_Apply,
+})
+
+-- [Atmosphere Groupbox]
+RightWorld:AddToggle('WorldAtmEnabled', {
+    Text = 'Enable Atmosphere',
+    Default = false,
+    Callback = applyAtmosphere,
+})
+RightWorld:AddSlider('WorldAtmDensity', {
+    Text = 'Density',
+    Default = 0.35,
+    Min = 0,
+    Max = 1,
+    Rounding = 2,
+    Callback = applyAtmosphere,
+})
+
+-- [Textures Groupbox]
+local TextureWorld = Tabs.World:AddLeftGroupbox('Textures')
+TextureWorld:AddToggle('MinecraftTextures', {
+    Text = 'Minecraft Pack',
+    Default = false,
+    Callback = function(val)
+        if val then applyTexturePack() else clearTexturePack() end
+    end,
+})
+
+-- [Settings / Theme / Save Manager]
+local RightSettings = Tabs.Settings:AddRightGroupbox('Configuration')
+ThemeManager:SetLibrary(Library)
+SaveManager:SetLibrary(Library)
+SaveManager:IgnoreThemeSettings()
+SaveManager:SetIgnoreIndexes({})
+ThemeManager:ApplyToTab(Tabs.Settings)
+SaveManager:BuildConfigSection(Tabs.Settings)
+SaveManager:LoadAutoloadConfig()
+
+Library:Notify('DustVisuals initialized successfully.')
+
+-- Character Respawn Handlers
+player.CharacterAdded:Connect(function(char)
+    task.wait(1)
+    if HatVariables.enabled and HatVariables.style == 'Classic' then
+        Hat_AddClassic(char)
+    end
+    if TrailVariables.enabled then
+        Trail_AddToCharacter(char)
+    end
+    if ForceFieldVariables.enabled then
+        ForceField_Apply(char)
+    end
+    ClassicAura_RefreshAll()
+    ParticleAura_RefreshAll()
+end)
